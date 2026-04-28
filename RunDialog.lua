@@ -265,13 +265,17 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
 
   local exiftoolPath = findExiftool()
   if not exiftoolPath then
-    LrDialogs.message(
+    local choice = LrDialogs.confirm(
       'exiftool が見つかりません',
-      'exiftool をインストールしてから再実行してください。\n\n' ..
-      'Homebrew でインストール:\n  brew install exiftool\n\n' ..
-      '検索したパス:\n  ' .. table.concat(EXIFTOOL_SEARCH_PATHS, '\n  '),
-      'critical'
+      'このプラグインの動作には exiftool が必要です。\n\n' ..
+      '公式サイトから macOS 用インストーラー（.pkg）をダウンロードして\n' ..
+      'インストールしてください。インストール後、再実行してください。',
+      'ダウンロードページを開く',
+      '閉じる'
     )
+    if choice == 'ok' then
+      os.execute('open "https://exiftool.org/"')
+    end
     return
   end
 
