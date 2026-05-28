@@ -1,69 +1,48 @@
-# CURRENT_TASK — select-share-runner.lrplugin
+# CURRENT_TASK — select-share-runner.lrplugin / select-share
 
-最終更新: 2026-04-28
+最終更新: 2026-05-28
 
 ---
 
 ## 完了した作業
 
-- `select-share-runner.lrplugin` を新規作成
-  - `Info.lua` — プラグインマニフェスト（LrSDK 6.0）
-  - `RunDialog.lua` — ダイアログ UI + build.py 実行ロジック
-  - `ImportMenuItem.lua` — adopted_list.txt 読み込み → カタログ照合 → ピック/コレクション作成
-  - `select-share/build.py` — ライブラリを同梱（配布対応）
-  - `README.md` — インストール手順・使い方（日本語）
-  - `LICENSE` — MIT License
-- exiftool ダイアログを改善（「ダウンロードページを開く」ボタン付き）
-- 動作確認済み（ビルダー・採用リスト読み込みともに）
+### select-share-runner.lrplugin（v1.0.2）
+- RunDialog.lua / ImportMenuItem.lua / README / LICENSE 整備・動作確認済み
+- 全バインディングバグ修正（bind_to_object=props 明示）
+- no_copy/move を「ファイル処理」popup に統合
+- exiftool 未インストール時: ダウンロードページを開くダイアログ
+- git subtree で github.com/syrup-murayama/select-share に配信体制構築
+
+### select-share / build.py
+- ダウンロードファイル名にサイトタイトルを反映
+  - JSON保存: `{title}-saved-YYYY-MM-DD.json`
+  - 採用リスト: `{title}-adopted_list.txt`
+- UI ヘッダー再設計（左→右フロー）
+  - 「4枚採用」ピル廃止 → 「採用リストを出力（N枚）」ボタンに統合
+  - タグ集計をヘッダーボタン直下ドロップダウンに変更（デフォルト非表示）
+  - 操作フロー: 保存/読み込み → 表示切替 → タグ集計 → 採用リストを出力
 
 ---
 
 ## 設計上の重要な判断
 
-### 配布可能設計
-- build.py はプラグイン内に同梱（`select-share/build.py`）
-- パス解決は `_PLUGIN.path` ベース（ハードコードなし）
-- 将来的に `LrHttp` でリモートから build.py を更新取得できる構造
+### バインディング（Lr プラグイン）
+- `LrView.bind { key='...', bind_to_object=props }` を全コントロールに明示
+- フォルダ表示は `static_text` + `truncation='middle'`
 
-### exiftool 対応
-- Apple Silicon (`/opt/homebrew/bin`) と Intel (`/usr/local/bin`) 両方を検索
-- 見つからない場合は公式サイト（https://exiftool.org/）を開くボタン付きダイアログを表示
-- `PATH=<exiftool_dir>:"$PATH"` をコマンドに付与してシェル環境の差異を吸収
+### ファイル処理
+- `--no-copy` は UI から除外（参照のみではリンク切れリスク）
+- 「コピー」「移動」の2択を `file_handling` popup で管理
 
-### UI 設計
-- フォルダ選択は「参照ボタン + `static_text`」パターン（`edit_field` は外部書き込みが UI に反映されない）
-- `props` は `LrBinding.makePropertyTable(context)` で生成（observable テーブル）
-- LrC SDK モジュールは `import` で読み込む（`require` 不可）
-
-### 採用リスト照合
-- カタログ全写真の stem を取得し、adopted stem のサブストリングとして照合
-- ステム先頭の日付（`YYYYMMDD`）でカタログ検索を絞り込み
-- 非インデントのフリーテキストは「見つからず」リストに出るが実害なし → 放置
-
-### 配布戦略
-- 無料・オープンソース（MIT）で公開
-- ツールはブランド構築・コミュニティ貢献が目的。収益は別途サービスで立てる
+### リポジトリ
+- 開発: `photo-workflow/` モノレポ（main 一本）
+- 配信: `git subtree push --prefix=lr-plugin/select-share-runner.lrplugin select-share main`
+- コマンドメモ: `photo-workflow/.git/SELECT_SHARE_SUBTREE.md`
 
 ---
 
 ## 次にやるべきステップ
 
 1. **GitHub Releases 設定** — ZIP パッケージを作成してリリースを切る
-2. **フォーマットバージョニング** — `adopted_list.txt` 先頭に `# format: v1` を埋め込み、将来の後方互換に備える
-3. **将来: exiftool バンドル対応**（Gatekeeper 問題があるため現状は保留）
-4. **将来: build.py 自動更新機能**（`LrHttp` でリモートから最新 build.py を取得）
-
----
-
-## ファイル構成
-
-```
-select-share-runner.lrplugin/
-├── Info.lua
-├── RunDialog.lua
-├── ImportMenuItem.lua
-├── README.md
-├── LICENSE
-└── select-share/
-    └── build.py
-```
+2. **フォーマットバージョニング** — `adopted_list.txt` 先頭に `# format: v1` を埋め込み
+3. **将来: build.py 自動更新**（`LrHttp` でリモートから取得）
