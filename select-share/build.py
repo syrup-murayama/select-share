@@ -384,7 +384,7 @@ studio@muraya.ma
 """
 
 
-def generate_html(photos: list[dict], title: str, photos_prefix: str = "photos", extra_css: str = "", group_threshold: int = 3) -> str:
+def generate_html(photos: list[dict], title: str, photos_prefix: str = "photos", extra_css: str = "", group_threshold: int = 3, credit: str = "") -> str:
     """クライアント向けスタンドアロン HTML を生成する。"""
     # 各写真の url を相対パスに変換
     photos_for_js = []
@@ -413,6 +413,11 @@ def generate_html(photos: list[dict], title: str, photos_prefix: str = "photos",
     title_esc = _html.escape(title)
     title_slug = _re.sub(r'[/\\:*?"<>|\s]+', '-', title)
     title_slug = _re.sub(r'-+', '-', title_slug).strip('-')
+    credit_name_esc = _html.escape(credit)
+    if credit_name_esc:
+        credit_block = f'<p class="help-prose">掲載写真はすべて <strong>© {credit_name_esc}</strong> の著作物です。無断転用・二次配布を禁じます。</p>'
+    else:
+        credit_block = ''
     custom_css_block = ("\n/* テーマ / カスタム */\n" + extra_css.strip()) if extra_css.strip() else ""
 
     return f'''<!DOCTYPE html>
@@ -866,6 +871,42 @@ kbd {{
 }}
 .mk-item {{ display: flex; align-items: center; gap: 3px; white-space: nowrap; }}
 
+/* ---- ヘルプモーダル ---- */
+.help-modal {{
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(40,32,28,0.72); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}}
+.help-modal.open {{ display: flex; }}
+.help-modal-box {{
+  position: relative;
+  background: var(--c-bg); border: 1.5px solid var(--c-border-light);
+  border-radius: 18px; padding: 32px 36px; max-width: 580px; width: 92%;
+  max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 12px 48px rgba(40,32,28,0.22);
+}}
+.help-modal-title {{
+  font-size: 1.05rem; font-weight: 700; color: var(--c-text); margin-bottom: 22px;
+}}
+.help-modal-close {{
+  position: absolute; top: 16px; right: 20px;
+  background: none; border: none; font-size: 1.2rem;
+  color: var(--c-text-muted); cursor: pointer; line-height: 1;
+}}
+.help-section-title {{
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--c-accent); text-transform: uppercase; margin: 18px 0 8px;
+}}
+.help-section-title:first-of-type {{ margin-top: 0; }}
+.help-row {{
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 7px; font-size: 0.8rem; color: var(--c-text);
+}}
+.help-keys {{ display: flex; gap: 3px; flex-shrink: 0; min-width: 90px; }}
+.help-prose {{
+  font-size: 0.8rem; color: var(--c-text); line-height: 1.6; margin-bottom: 6px;
+}}
+
 @media (max-width: 640px) {{
   .main {{ padding: 12px; }}
   .kbd-hint {{ display: none; }}
@@ -898,6 +939,7 @@ kbd {{
     <div class="header-actions">
       <button class="header-action-btn primary" onclick="exportState()">💾 保存</button>
       <button class="header-action-btn" onclick="triggerImport()">📂 読み込み</button>
+      <button class="header-action-btn" onclick="openHelp()" title="使い方">？</button>
       <span class="last-saved" id="last-saved-label"></span>
       <input type="file" id="state-file-input" accept="application/json,.json" style="display:none" onchange="importState(event)">
     </div>
@@ -977,6 +1019,43 @@ kbd {{
 
 <div class="main">
   <div class="grid" id="grid"></div>
+</div>
+
+<!-- ヘルプモーダル -->
+<div class="help-modal" id="help-modal" onclick="closeHelpOutside(event)">
+  <div class="help-modal-box">
+    <button class="help-modal-close" onclick="closeHelp()">&#x2715;</button>
+    <div class="help-modal-title">📖 使い方</div>
+
+    <div class="help-section-title">操作方法</div>
+    <p class="help-prose">写真にカーソルを合わせると採用ボタン・レーティングが表示されます。クリックまたはキーボードで操作できます。</p>
+
+    <div class="help-section-title">キーボードショートカット — グリッド</div>
+    <div class="help-row"><div class="help-keys"><kbd>←</kbd><kbd>→</kbd></div><span>カードを移動</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>Space</kbd><kbd>Enter</kbd></div><span>拡大表示</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></div><span>レーティング（再押しで解除）</span></div>
+
+    <div class="help-section-title">キーボードショートカット — 拡大表示中</div>
+    <div class="help-row"><div class="help-keys"><kbd>←</kbd><kbd>→</kbd></div><span>前後の写真へ</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></div><span>レーティング（再押しで解除）</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>Space</kbd><kbd>Esc</kbd></div><span>閉じる</span></div>
+
+    <div class="help-section-title">保存・読み込み</div>
+    <p class="help-prose"><strong>💾 保存</strong> — セレクト状態（採用・レーティング・メモ）をJSONファイルとして保存します。<br>
+    <strong>📂 読み込み</strong> — 保存したJSONを読み込んで状態を復元します。<br>
+    作業途中でブラウザを閉じる前に必ず保存してください。</p>
+
+    <div class="help-section-title">採用リストの出力</div>
+    <p class="help-prose"><strong>📋 採用リストを出力</strong> — 採用した写真のファイル名一覧を .txt ファイルとしてダウンロードします。このファイルをカメラマンに送ることでセレクト結果を共有できます。</p>
+
+    <div class="help-section-title">ご利用にあたって</div>
+    {credit_block}
+    <p class="help-prose">本ギャラリーはセレクト確認専用です。第三者への共有・転送はご遠慮ください。</p>
+    <p class="help-prose">本ツールの利用により生じた損害について、製作者は一切の責任を負いません。</p>
+    <p class="help-prose" style="margin-top:14px;font-size:0.72rem;color:var(--c-text-muted)">Generated by <a href="https://github.com/syrup-murayama/select-share" target="_blank" style="color:inherit;text-decoration:underline">select-share</a> (MIT License)</p>
+  </div>
 </div>
 
 <!-- ショートカット一覧 -->
@@ -1296,6 +1375,15 @@ window.closeTagModal = function() {{
 window.closeTagModalOverlay = function(e) {{
   if (e.target === document.getElementById('tag-modal')) window.closeTagModal();
 }};
+window.openHelp = function() {{
+  document.getElementById('help-modal').classList.add('open');
+}};
+window.closeHelp = function() {{
+  document.getElementById('help-modal').classList.remove('open');
+}};
+window.closeHelpOutside = function(e) {{
+  if (e.target === document.getElementById('help-modal')) closeHelp();
+}};
 window.togglePresetTag = function(tag) {{
   if (!_tagStem) return;
   const cur = S.tags[_tagStem] || [];
@@ -1516,7 +1604,10 @@ document.addEventListener('keydown', e => {{
   const isTextInput = tag === 'INPUT' || tag === 'TEXTAREA';
   if (isTextInput) return;
 
-  if (e.key === 'Escape') {{ window.closeModal(); window.closeTagModal(); return; }}
+  if (e.key === 'Escape') {{
+    if (document.getElementById('help-modal').classList.contains('open')) {{ closeHelp(); return; }}
+    window.closeModal(); window.closeTagModal(); return;
+  }}
 
   if (isModalOpen()) {{
     if (e.key === 'ArrowLeft')  {{ e.preventDefault(); window.showAdjacentModal(-1); return; }}
@@ -1614,6 +1705,7 @@ def main() -> None:
     parser.add_argument('--theme',       default='default', choices=list(THEMES), help='テーマプリセットを選択する')
     parser.add_argument('--extra-css',   default='', metavar='FILE', help='追加CSSファイルのパス')
     parser.add_argument('--key-color',   default='', metavar='COLOR', help='テーマ生成に使うキーカラー（例: #9d342b）')
+    parser.add_argument('--credit',      default='', help='著作権者名（例: 村山写真事務所）')
     args = parser.parse_args()
 
     jpeg_dir = Path(args.jpeg_dir)
@@ -1673,7 +1765,7 @@ def main() -> None:
 
     # HTML生成
     print('[select-share] HTML生成中…')
-    html_str = generate_html(photos, title, photos_prefix, extra_css=extra_css, group_threshold=args.group_threshold)
+    html_str = generate_html(photos, title, photos_prefix, extra_css=extra_css, group_threshold=args.group_threshold, credit=args.credit)
     html_path = output_dir / 'index.html'
     html_path.write_text(html_str, encoding='utf-8')
     print(f'  → {html_path}')
