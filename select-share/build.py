@@ -49,7 +49,7 @@ EXIF_FIELDS = [
 def run_exiftool(jpeg_dir: Path) -> list[dict]:
     """exiftool -j で metadata を一括取得する。"""
     cmd = ["exiftool", "-j", "-r", "-ext", "jpg", "-ext", "jpeg",
-           "-ext", "JPG", "-ext", "JPEG"] + EXIF_FIELDS + [str(jpeg_dir)]
+           "-ext", "JPG", "-ext", "JPEG"] + EXIF_FIELDS + [str(jpeg_dir.resolve())]
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         return json.loads(result.stdout)
@@ -106,7 +106,7 @@ def parse_datetime(meta: dict) -> str:
         dt = datetime.strptime(str(raw)[:19], "%Y:%m:%d %H:%M:%S")
         return dt.isoformat()
     except ValueError:
-        return str(raw)
+        return ""
 
 
 def assign_groups(photos: list[dict], threshold_seconds: int = 3) -> None:
