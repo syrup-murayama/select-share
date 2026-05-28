@@ -409,7 +409,10 @@ def generate_html(photos: list[dict], title: str, photos_prefix: str = "photos",
     session_id = hashlib.md5(_stems.encode()).hexdigest()[:8]
 
     import html as _html
+    import re as _re
     title_esc = _html.escape(title)
+    title_slug = _re.sub(r'[/\\:*?"<>|\s]+', '-', title)
+    title_slug = _re.sub(r'-+', '-', title_slug).strip('-')
     custom_css_block = ("\n/* テーマ / カスタム */\n" + extra_css.strip()) if extra_css.strip() else ""
 
     return f'''<!DOCTYPE html>
@@ -1053,6 +1056,7 @@ const PHOTOS = {photos_json};
 const ALL_KEYWORDS = {keywords_json};
 const PRESET_TAGS = ['お気に入り', 'ヘービー候補', 'SNS向け', 'プリント向け', '要確認', '使わない'];
 const SESSION_ID = '{session_id}';
+const TITLE_SLUG = '{title_slug}';
 const STORE = 'select-share-' + SESSION_ID;
 const GROUP_THRESHOLD_DEFAULT = {group_threshold};
 
@@ -1454,7 +1458,7 @@ window.exportState = function() {{
   const blob = new Blob([JSON.stringify(S, null, 2)], {{type:'application/json;charset=utf-8'}});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'select-' + fmtDate(new Date()) + '.json';
+  a.download = (TITLE_SLUG ? TITLE_SLUG + '-' : '') + 'saved-' + fmtDate(new Date()) + '.json';
   a.click();
   // blob URL は GC に任せる（revokeObjectURL は不要）
 }};
@@ -1505,7 +1509,7 @@ window.exportList = function() {{
   }});
   const blob = new Blob([lines.join('\\n')], {{type:'text/plain;charset=utf-8'}});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'adopted_list.txt'; a.click();
+  a.download = (TITLE_SLUG ? TITLE_SLUG + '-' : '') + 'adopted_list.txt'; a.click();
 }};
 
 /* ---- Keyboard ---- */
