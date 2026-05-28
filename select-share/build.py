@@ -373,13 +373,6 @@ Chrome または Safari を推奨します。
 テキストファイルで書き出せます。
 
 
-----------------------------------------------------
-  お問い合わせ
-----------------------------------------------------
-
-studio@muraya.ma
-
-
 ====================================================
 """
 
@@ -1121,7 +1114,7 @@ const PHOTOS = {photos_json};
 const ALL_KEYWORDS = {keywords_json};
 const PRESET_TAGS = ['お気に入り', 'ヘービー候補', 'SNS向け', 'プリント向け', '要確認', '使わない'];
 const SESSION_ID = '{session_id}';
-const TITLE_SLUG = '{title_slug}';
+const TITLE_SLUG = {json.dumps(title_slug)};
 const STORE = 'select-share-' + SESSION_ID;
 const GROUP_THRESHOLD_DEFAULT = {group_threshold};
 
