@@ -48,8 +48,7 @@ local function loadPrefs(props)
   props.min_rating      = prefs.min_rating      or 1
   props.theme           = prefs.theme           or 'default'
   props.group_threshold = prefs.group_threshold or 3
-  props.no_copy         = prefs.no_copy         or false
-  props.move            = prefs.move            or false
+  props.file_handling   = prefs.file_handling   or 'copy'
   props.no_zip          = prefs.no_zip          or false
   props.extra_css       = prefs.extra_css       or ''
   props.key_color       = prefs.key_color       or ''
@@ -63,8 +62,7 @@ local function savePrefs(props)
   prefs.min_rating      = props.min_rating
   prefs.theme           = props.theme
   prefs.group_threshold = props.group_threshold
-  prefs.no_copy         = props.no_copy
-  prefs.move            = props.move
+  prefs.file_handling   = props.file_handling
   prefs.no_zip          = props.no_zip
   prefs.extra_css       = props.extra_css
   prefs.key_color       = props.key_color
@@ -91,9 +89,8 @@ local function buildCommand(props, exiftoolPath)
   if props.group_threshold and tonumber(props.group_threshold) then
     cmd = cmd .. ' --group-threshold ' .. tostring(props.group_threshold)
   end
-  if props.no_copy  then cmd = cmd .. ' --no-copy' end
-  if props.move     then cmd = cmd .. ' --move' end
-  if props.no_zip   then cmd = cmd .. ' --no-zip' end
+  if props.file_handling == 'move' then cmd = cmd .. ' --move' end
+  if props.no_zip then cmd = cmd .. ' --no-zip' end
   if props.extra_css and props.extra_css ~= '' then
     cmd = cmd .. ' --extra-css ' .. q(props.extra_css)
   end
@@ -178,12 +175,15 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
         spacing = f:control_spacing(),
         f:row {
           f:static_text { title = 'タイトル:', width = 110 },
-          f:edit_field { value = LrView.bind 'title', width = FIELD_W + 60 },
+          f:edit_field {
+            value = LrView.bind { key = 'title', bind_to_object = props },
+            width = FIELD_W + 60,
+          },
         },
         f:row {
           f:static_text { title = '最低レーティング:', width = 110 },
           f:popup_menu {
-            value = LrView.bind 'min_rating',
+            value = LrView.bind { key = 'min_rating', bind_to_object = props },
             items = {
               { title = '0 (すべて)',   value = 0 },
               { title = '1 ★',         value = 1 },
@@ -196,7 +196,7 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
           f:spacer { width = 20 },
           f:static_text { title = 'テーマ:', width = 50 },
           f:popup_menu {
-            value = LrView.bind 'theme',
+            value = LrView.bind { key = 'theme', bind_to_object = props },
             items = {
               { title = 'Default', value = 'default' },
               { title = 'Natural', value = 'natural' },
@@ -206,12 +206,25 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
           },
           f:spacer { width = 20 },
           f:static_text { title = 'グループ閾値(秒):', width = 100 },
-          f:edit_field { value = LrView.bind 'group_threshold', width = 50 },
+          f:edit_field {
+            value = LrView.bind { key = 'group_threshold', bind_to_object = props },
+            width = 50,
+          },
         },
         f:row {
-          f:checkbox { title = 'JPEGをコピーしない (--no-copy)', value = LrView.bind 'no_copy' },
-          f:checkbox { title = '元ファイルを移動 (--move)',       value = LrView.bind 'move' },
-          f:checkbox { title = 'ZIPを作成しない (--no-zip)',       value = LrView.bind 'no_zip' },
+          f:static_text { title = 'ファイル処理:', width = 110 },
+          f:popup_menu {
+            value = LrView.bind { key = 'file_handling', bind_to_object = props },
+            items = {
+              { title = 'コピー（デフォルト）',     value = 'copy' },
+              { title = '移動（元ファイルを削除）', value = 'move' },
+            },
+          },
+          f:spacer { width = 20 },
+          f:checkbox {
+            title = 'ZIPを作成しない',
+            value = LrView.bind { key = 'no_zip', bind_to_object = props },
+          },
         },
         f:row {
           f:push_button {
@@ -241,7 +254,7 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
         f:row {
           f:static_text { title = 'キーカラー:', width = 110 },
           f:edit_field {
-            value = LrView.bind 'key_color',
+            value = LrView.bind { key = 'key_color', bind_to_object = props },
             width = 120,
             placeholder_string = '#9d342b',
           },

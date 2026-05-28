@@ -4,7 +4,7 @@ return {
   LrToolkitIdentifier = 'com.muraya.select-share-runner',
   LrPluginName = 'Select Share ビルダー',
   LrPluginInfoUrl = 'https://github.com/syrup-murayama/photo-workflow',
-  VERSION = { major = 1, minor = 0, revision = 1, build = 0 },
+  VERSION = { major = 1, minor = 0, revision = 2, build = 0 },
   LrLibraryMenuItems = {
     {
       title = 'Select Share ビルダー...',
