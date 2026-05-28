@@ -123,9 +123,10 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
             title = '入力フォルダを選択...',
             action = function()
               local r = LrDialogs.runOpenPanel {
-                title = 'JPEGフォルダを選択',
-                canChooseFiles = false,
-                canChooseDirectories = true,
+                title                   = 'JPEGフォルダを選択',
+                canChooseFiles          = false,
+                canChooseDirectories    = true,
+                canCreateDirectories    = true,
                 allowsMultipleSelection = false,
               }
               if r then props.jpeg_dir = r[1] end
@@ -133,12 +134,14 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
           },
           f:static_text {
             title = LrView.bind {
-              key = 'jpeg_dir',
-              transform = function(v) return (v and v ~= '') and v or '（未選択）' end,
+              key            = 'jpeg_dir',
+              bind_to_object = props,
+              transform      = function(v) return (v and v ~= '') and v or '（未選択）' end,
             },
             text_color = LrColor(0.4, 0.4, 0.4),
-            width = FIELD_W,
-            tooltip = LrView.bind 'jpeg_dir',
+            width      = FIELD_W,
+            truncation = 'middle',
+            tooltip    = LrView.bind { key = 'jpeg_dir', bind_to_object = props },
           },
         },
         f:row {
@@ -146,9 +149,10 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
             title = '書き出し先を選択...',
             action = function()
               local r = LrDialogs.runOpenPanel {
-                title = '出力フォルダを選択',
-                canChooseFiles = false,
-                canChooseDirectories = true,
+                title                   = '出力フォルダを選択',
+                canChooseFiles          = false,
+                canChooseDirectories    = true,
+                canCreateDirectories    = true,
                 allowsMultipleSelection = false,
               }
               if r then props.output = r[1] end
@@ -156,11 +160,13 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
           },
           f:static_text {
             title = LrView.bind {
-              key = 'output',
-              transform = function(v) return (v and v ~= '') and v or '（未選択）' end,
+              key            = 'output',
+              bind_to_object = props,
+              transform      = function(v) return (v and v ~= '') and v or '（未選択）' end,
             },
-            width = FIELD_W,
-            tooltip = LrView.bind 'output',
+            width      = FIELD_W,
+            truncation = 'middle',
+            tooltip    = LrView.bind { key = 'output', bind_to_object = props },
           },
         },
       },
@@ -222,12 +228,14 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
           },
           f:static_text {
             title = LrView.bind {
-              key = 'extra_css',
-              transform = function(v) return (v and v ~= '') and v or '（なし）' end,
+              key            = 'extra_css',
+              bind_to_object = props,
+              transform      = function(v) return (v and v ~= '') and v or '（なし）' end,
             },
             text_color = LrColor(0.4, 0.4, 0.4),
-            width = FIELD_W,
-            tooltip = LrView.bind 'extra_css',
+            width      = FIELD_W,
+            truncation = 'middle',
+            tooltip    = LrView.bind { key = 'extra_css', bind_to_object = props },
           },
         },
         f:row {
