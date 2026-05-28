@@ -459,15 +459,7 @@ body {{
   font-size: 1.1rem; font-weight: 700; color: var(--c-text);
   flex: 1; letter-spacing: -0.01em;
 }}
-.adopt-counter {{
-  display: flex; align-items: baseline; gap: 5px;
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent-dark));
-  color: #fff; padding: 6px 16px; border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(var(--c-accent-rgb), 0.35);
-  white-space: nowrap; cursor: pointer;
-}}
-.adopt-counter .n {{ font-size: 1.35rem; font-weight: 800; line-height: 1; }}
-.adopt-counter .lbl {{ font-size: 0.72rem; opacity: 0.85; }}
+.export-hdr-btn {{ white-space: nowrap; }}
 .header-actions {{
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }}
@@ -749,27 +741,22 @@ select.ctrl:focus {{ border-color: var(--c-accent); }}
 .tag-modal-close:hover {{ border-color: #c0b0a0; }}
 .tag-modal-footer {{ display: flex; justify-content: flex-end; }}
 
-/* ---- コレクションパネル ---- */
+/* ---- タグ集計ドロップダウン ---- */
+.tag-summary-wrap {{ position: relative; }}
 .coll-panel {{
-  position: fixed; bottom: 20px; right: 20px;
-  background: rgba(255,255,255,0.96); backdrop-filter: blur(8px);
+  display: none; position: absolute; top: calc(100% + 6px); right: 0;
+  background: rgba(255,255,255,0.98); backdrop-filter: blur(8px);
   border: 1.5px solid var(--c-border-light); border-radius: 14px;
   padding: 14px 16px; min-width: 190px;
-  box-shadow: 0 6px 24px rgba(61,53,48,0.10); z-index: 100;
+  box-shadow: 0 6px 24px rgba(61,53,48,0.10); z-index: 200;
 }}
+.coll-panel.open {{ display: block; }}
 .coll-title {{ font-size: 0.72rem; font-weight: 700; color: var(--c-accent); margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }}
-.coll-rows {{ display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }}
+.coll-rows {{ display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; }}
 .coll-row {{ display: flex; justify-content: space-between; align-items: center; gap: 12px; cursor: pointer; padding: 2px 0; }}
 .coll-tag {{ font-size: 0.72rem; color: #7d6e65; }}
 .coll-n {{ font-size: 0.78rem; font-weight: 700; color: var(--c-text); }}
 .coll-row:hover .coll-tag {{ color: var(--c-accent); }}
-.export-list-btn {{
-  display: block; width: 100%; padding: 7px 12px; border-radius: 8px;
-  border: 1.5px solid var(--c-accent); background: transparent;
-  color: var(--c-accent); font-size: 0.78rem; font-weight: 600;
-  cursor: pointer; text-align: center; transition: all 0.15s;
-}}
-.export-list-btn:hover {{ background: var(--c-accent); color: #fff; }}
 
 /* ---- キーボードヒント（ヘッダー内） ---- */
 .kbd-hint {{
@@ -881,7 +868,6 @@ kbd {{
 
 @media (max-width: 640px) {{
   .main {{ padding: 12px; }}
-  .coll-panel {{ display: none; }}
   .kbd-hint {{ display: none; }}
   .shortcut-footer {{ flex-direction: column; gap: 20px; }}
 }}
@@ -920,10 +906,18 @@ kbd {{
       <button class="view-toggle-btn"        id="vt-group"   onclick="setViewMode('group')">グループ</button>
       <button class="view-toggle-btn"        id="vt-adopted" onclick="setViewMode('adopted')">採用のみ</button>
     </div>
-    <div class="adopt-counter">
-      <span class="n" id="adopt-count">0</span>
-      <span class="lbl">枚採用</span>
+    <div class="tag-summary-wrap">
+      <button class="header-action-btn" onclick="toggleCollPanel(event)">🏷 タグ集計</button>
+      <div class="coll-panel" id="coll-panel">
+        <div class="coll-title">タグ集計</div>
+        <div class="coll-rows" id="coll-rows">
+          <div style="font-size:0.72rem;color:#c0b0a0">タグなし</div>
+        </div>
+      </div>
     </div>
+    <button class="header-action-btn primary export-hdr-btn" onclick="exportList()">
+      📋 採用リストを出力（<span id="adopt-count">0</span>枚）
+    </button>
   </div>
   <div class="controls">
     <div class="search-wrap">
@@ -1041,14 +1035,6 @@ kbd {{
   </div>
 </div>
 
-<!-- コレクションパネル -->
-<div class="coll-panel" id="coll-panel">
-  <div class="coll-title">タグ集計</div>
-  <div class="coll-rows" id="coll-rows">
-    <div style="font-size:0.72rem;color:#c0b0a0">タグなし</div>
-  </div>
-  <button class="export-list-btn" onclick="exportList()">採用リストを出力</button>
-</div>
 
 <script>
 /* ---- Data ---- */
@@ -1449,6 +1435,18 @@ window.onGroupThresholdChange = function(v) {{
   regroupPhotos(sec);
   save(); renderGrid();
 }};
+
+/* ---- タグ集計ドロップダウン ---- */
+window.toggleCollPanel = function(e) {{
+  e.stopPropagation();
+  document.getElementById('coll-panel').classList.toggle('open');
+}};
+document.addEventListener('click', function(e) {{
+  if (!e.target.closest('.tag-summary-wrap')) {{
+    const p = document.getElementById('coll-panel');
+    if (p) p.classList.remove('open');
+  }}
+}});
 
 /* ---- State import/export ---- */
 window.exportState = function() {{
