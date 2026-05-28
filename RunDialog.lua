@@ -45,6 +45,7 @@ local function loadPrefs(props)
   props.jpeg_dir        = prefs.jpeg_dir        or ''
   props.output          = prefs.output          or './delivery'
   props.title           = prefs.title           or ''
+  props.credit_name     = prefs.credit_name     or ''
   props.min_rating      = prefs.min_rating      or 1
   props.theme           = prefs.theme           or 'default'
   props.group_threshold = prefs.group_threshold or 3
@@ -59,6 +60,7 @@ local function savePrefs(props)
   prefs.jpeg_dir        = props.jpeg_dir
   prefs.output          = props.output
   prefs.title           = props.title
+  prefs.credit_name     = props.credit_name
   prefs.min_rating      = props.min_rating
   prefs.theme           = props.theme
   prefs.group_threshold = props.group_threshold
@@ -96,6 +98,9 @@ local function buildCommand(props, exiftoolPath)
   end
   if props.key_color and props.key_color ~= '' then
     cmd = cmd .. ' --key-color ' .. q(props.key_color)
+  end
+  if props.credit_name and props.credit_name ~= '' then
+    cmd = cmd .. ' --credit ' .. q(props.credit_name)
   end
 
   return cmd .. ' 2>&1'
@@ -178,6 +183,14 @@ LrFunctionContext.callWithContext('SelectShareRunner', function(context)
           f:edit_field {
             value = LrView.bind { key = 'title', bind_to_object = props },
             width = FIELD_W + 60,
+          },
+        },
+        f:row {
+          f:static_text { title = 'クレジット:', width = 110 },
+          f:edit_field {
+            value = LrView.bind { key = 'credit_name', bind_to_object = props },
+            width = FIELD_W + 60,
+            placeholder_string = '例: 村山写真事務所',
           },
         },
         f:row {
