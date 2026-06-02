@@ -301,6 +301,7 @@ Chrome または Safari を推奨します。
 ▼ 採用する
   サムネイル右上の「○」ボタン、または拡大表示中の「採用する」ボタンを押します。
   採用済みの写真は枠が緑色になります。もう一度押すと解除できます。
+  ★ 絞り込み後に「表示中N枚を採用」ボタン（または Cmd/Ctrl+A）で一括採用できます。
 
 ▼ レーティングをつける
   各カード下部の ★ をクリックして 1〜5 段階で評価できます。
@@ -510,6 +511,16 @@ select.ctrl {{
 }}
 select.ctrl:focus {{ border-color: var(--c-accent); }}
 .filter-stars {{ display: flex; gap: 2px; align-items: center; }}
+.bulk-btn {{
+  border: 1.5px solid var(--c-border); border-radius: 8px;
+  background: var(--c-bg-input); color: #5f5148;
+  padding: 6px 10px; font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}}
+.bulk-btn:hover {{ border-color: var(--c-accent); color: var(--c-accent); }}
+.bulk-btn:disabled {{ opacity: 0.38; cursor: default; pointer-events: none; }}
+.bulk-btn.adopt {{ background: linear-gradient(135deg, var(--c-accent), var(--c-accent-dark)); border-color: var(--c-accent-dark); color: #fff; }}
 .filter-star-btn {{
   background: none; border: none; padding: 0 1px; font-size: 1.05rem;
   cursor: pointer; color: var(--c-border); line-height: 1; transition: color 0.12s, transform 0.1s;
@@ -978,6 +989,10 @@ kbd {{
       <div class="filter-stars" id="filter-stars"></div>
     </div>
     <div class="filter-group">
+      <button class="bulk-btn adopt" id="bulk-adopt-btn" onclick="bulkAdoptVisible(true)">✓ 表示中を採用</button>
+      <button class="bulk-btn" id="bulk-unadopt-btn" onclick="bulkAdoptVisible(false)">○ 解除</button>
+    </div>
+    <div class="filter-group">
       <span class="filter-label">並び替え</span>
       <select class="ctrl" id="sort-select" onchange="onSortChange()">
         <option value="dt_asc">撮影時刻 ↑</option>
@@ -1033,6 +1048,7 @@ kbd {{
     <div class="help-row"><div class="help-keys"><kbd>Space</kbd><kbd>Enter</kbd></div><span>拡大表示</span></div>
     <div class="help-row"><div class="help-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
     <div class="help-row"><div class="help-keys"><kbd>1</kbd>〜<kbd>5</kbd></div><span>レーティング（再押しで解除）</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>Cmd/Ctrl</kbd><kbd>A</kbd></div><span>表示中を一括採用（再押しで全解除）</span></div>
 
     <div class="help-section-title">キーボードショートカット — 拡大表示中</div>
     <div class="help-row"><div class="help-keys"><kbd>←</kbd><kbd>→</kbd></div><span>前後の写真へ</span></div>
@@ -1064,6 +1080,7 @@ kbd {{
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>Space</kbd><kbd>Enter</kbd></div><span>拡大表示</span></div>
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>1</kbd>〜<kbd>5</kbd></div><span>レーティング（再押しで解除）</span></div>
+    <div class="shortcut-row"><div class="shortcut-keys"><kbd>⌘/Ctrl</kbd><kbd>A</kbd></div><span>表示中を一括採用（再押しで全解除）</span></div>
   </div>
   <div class="shortcut-col">
     <div class="shortcut-col-title">拡大表示中</div>
@@ -1308,6 +1325,13 @@ function renderGrid() {{
     gridEl.innerHTML = list.map(renderCard).join('');
   }}
   document.getElementById('showing-count').textContent = list.length + ' / ' + PHOTOS.length + ' 枚';
+  const adoptBtn = document.getElementById('bulk-adopt-btn');
+  const unadoptBtn = document.getElementById('bulk-unadopt-btn');
+  if (adoptBtn) {{
+    adoptBtn.textContent = '✓ 表示中 ' + list.length + ' 枚を採用';
+    adoptBtn.disabled = list.length === 0;
+    unadoptBtn.disabled = list.length === 0;
+  }}
   updateAdoptCounter();
   updateCollPanel();
   if (_focusedStem) {{
@@ -1343,6 +1367,12 @@ window.toggleAdopt = function(e, stem) {{
   S.adopted[stem] = !S.adopted[stem];
   save(); updateCard(stem); updateAdoptCounter(); updateCollPanel();
 }};
+window.bulkAdoptVisible = function(adopt) {{
+  const list = filterAndSort();
+  if (!list.length) return;
+  list.forEach(p => {{ if (adopt) S.adopted[p.stem] = true; else delete S.adopted[p.stem]; }});
+  save(); renderGrid();
+}};
 function updateAdoptCounter() {{
   document.getElementById('adopt-count').textContent =
     PHOTOS.filter(p => !!S.adopted[p.stem]).length;
@@ -1360,7 +1390,7 @@ window.setRating = function(stem, val) {{
   if (val === 0 || S.ratings[stem] === val) delete S.ratings[stem];
   else S.ratings[stem] = val;
   save(); updateCard(stem);
-  if (S.ui.filter_op !== 'all') renderGrid();
+  if ((S.ui.filter_level || 0) > 0) renderGrid();
 }};
 
 window.setNote = function(stem, val) {{
@@ -1627,6 +1657,14 @@ document.addEventListener('keydown', e => {{
   const tag = document.activeElement ? document.activeElement.tagName : '';
   const isTextInput = tag === 'INPUT' || tag === 'TEXTAREA';
   if (isTextInput) return;
+
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'a' || e.key === 'A')) {{
+    e.preventDefault();
+    const list = filterAndSort();
+    const allAdopted = list.length > 0 && list.every(p => S.adopted[p.stem]);
+    window.bulkAdoptVisible(!allAdopted);
+    return;
+  }}
 
   if (e.key === 'Escape') {{
     if (document.getElementById('help-modal').classList.contains('open')) {{ closeHelp(); return; }}
