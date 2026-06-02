@@ -303,7 +303,7 @@ Chrome または Safari を推奨します。
   採用済みの写真は枠が緑色になります。もう一度押すと解除できます。
 
 ▼ レーティングをつける
-  各カード下部の ★ をクリックして 1〜3 段階で評価できます。
+  各カード下部の ★ をクリックして 1〜5 段階で評価できます。
   同じ ★ をもう一度クリックするとリセットされます。
 
 ▼ メモを書く
@@ -338,7 +338,7 @@ Chrome または Safari を推奨します。
   ファイル名・タグ・メモ・キーワードで絞り込めます。
 
 ▼ 絞り込みメニュー
-  レーティングや採用済みで絞り込めます。
+  レーティング（不等号で以上/以下/一致を選択）で絞り込めます。
 
 ▼ 並び替えメニュー
   撮影時刻・撮影者レーティング・あなたのレーティングで並び替えられます。
@@ -355,12 +355,12 @@ Chrome または Safari を推奨します。
   ← →            カードを移動
   Space / Enter   選択中の写真を拡大表示
   A               採用 / 解除
-  1 / 2 / 3       レーティング（再押しで解除）
+  1 〜 5          レーティング（再押しで解除）
 
 【拡大表示中】
   ← →            前後の写真へ移動
   A               採用 / 解除
-  1 / 2 / 3       レーティング（再押しで解除）
+  1 〜 5          レーティング（再押しで解除）
   Space / Esc     閉じる
 
 
@@ -509,6 +509,13 @@ select.ctrl {{
   cursor: pointer; outline: none; transition: border-color 0.15s;
 }}
 select.ctrl:focus {{ border-color: var(--c-accent); }}
+.filter-stars {{ display: flex; gap: 2px; align-items: center; }}
+.filter-star-btn {{
+  background: none; border: none; padding: 0 1px; font-size: 1.05rem;
+  cursor: pointer; color: var(--c-border); line-height: 1; transition: color 0.12s, transform 0.1s;
+}}
+.filter-star-btn.on  {{ color: var(--c-accent); }}
+.filter-star-btn:hover {{ color: var(--c-accent); transform: scale(1.15); }}
 .size-row {{ display: flex; align-items: center; gap: 6px; }}
 .size-label {{ font-size: 0.72rem; color: #a09080; white-space: nowrap; }}
 .size-slider {{
@@ -963,14 +970,12 @@ kbd {{
     </div>
     <div class="filter-group">
       <span class="filter-label">絞り込み</span>
-      <select class="ctrl" id="filter-op" onchange="onFilterChange()">
-        <option value="all">すべて ({n_total}枚)</option>
-        <option value="eq3">★★★ のみ</option>
-        <option value="eq2">★★ のみ</option>
-        <option value="eq1">★ のみ</option>
-        <option value="gte2">★★ 以上</option>
-        <option value="adopted">採用済みのみ</option>
+      <select class="ctrl" id="filter-cmp" onchange="onFilterCmpChange()">
+        <option value="gte">以上</option>
+        <option value="lte">以下</option>
+        <option value="eq">一致</option>
       </select>
+      <div class="filter-stars" id="filter-stars"></div>
     </div>
     <div class="filter-group">
       <span class="filter-label">並び替え</span>
@@ -1001,7 +1006,7 @@ kbd {{
       <div class="kbd-hint-item"><kbd>←</kbd><kbd>→</kbd><span>移動</span></div>
       <div class="kbd-hint-item"><kbd>Space</kbd><span>拡大</span></div>
       <div class="kbd-hint-item"><kbd>A</kbd><span>採用</span></div>
-      <div class="kbd-hint-item"><kbd>1-3</kbd><span>レーティング</span></div>
+      <div class="kbd-hint-item"><kbd>1-5</kbd><span>レーティング</span></div>
       <div class="kbd-hint-item"><kbd>Esc</kbd><span>閉じる</span></div>
     </div>
   </div>
@@ -1027,12 +1032,12 @@ kbd {{
     <div class="help-row"><div class="help-keys"><kbd>←</kbd><kbd>→</kbd></div><span>カードを移動</span></div>
     <div class="help-row"><div class="help-keys"><kbd>Space</kbd><kbd>Enter</kbd></div><span>拡大表示</span></div>
     <div class="help-row"><div class="help-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
-    <div class="help-row"><div class="help-keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></div><span>レーティング（再押しで解除）</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>1</kbd>〜<kbd>5</kbd></div><span>レーティング（再押しで解除）</span></div>
 
     <div class="help-section-title">キーボードショートカット — 拡大表示中</div>
     <div class="help-row"><div class="help-keys"><kbd>←</kbd><kbd>→</kbd></div><span>前後の写真へ</span></div>
     <div class="help-row"><div class="help-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
-    <div class="help-row"><div class="help-keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></div><span>レーティング（再押しで解除）</span></div>
+    <div class="help-row"><div class="help-keys"><kbd>1</kbd>〜<kbd>5</kbd></div><span>レーティング（再押しで解除）</span></div>
     <div class="help-row"><div class="help-keys"><kbd>Space</kbd><kbd>Esc</kbd></div><span>閉じる</span></div>
 
     <div class="help-section-title">保存・読み込み</div>
@@ -1058,13 +1063,13 @@ kbd {{
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>←</kbd><kbd>→</kbd></div><span>カードを移動</span></div>
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>Space</kbd><kbd>Enter</kbd></div><span>拡大表示</span></div>
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
-    <div class="shortcut-row"><div class="shortcut-keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></div><span>レーティング（再押しで解除）</span></div>
+    <div class="shortcut-row"><div class="shortcut-keys"><kbd>1</kbd>〜<kbd>5</kbd></div><span>レーティング（再押しで解除）</span></div>
   </div>
   <div class="shortcut-col">
     <div class="shortcut-col-title">拡大表示中</div>
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>←</kbd><kbd>→</kbd></div><span>前後の写真へ</span></div>
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>A</kbd></div><span>採用 / 解除</span></div>
-    <div class="shortcut-row"><div class="shortcut-keys"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></div><span>レーティング（再押しで解除）</span></div>
+    <div class="shortcut-row"><div class="shortcut-keys"><kbd>1</kbd>〜<kbd>5</kbd></div><span>レーティング（再押しで解除）</span></div>
     <div class="shortcut-row"><div class="shortcut-keys"><kbd>Space</kbd><kbd>Esc</kbd></div><span>閉じる</span></div>
   </div>
 </div>
@@ -1083,7 +1088,7 @@ kbd {{
   <div class="modal-keys">
     <span class="mk-item"><kbd>←</kbd><kbd>→</kbd> 移動</span>
     <span class="mk-item"><kbd>A</kbd> 採用</span>
-    <span class="mk-item"><kbd>1-3</kbd> レーティング</span>
+    <span class="mk-item"><kbd>1-5</kbd> レーティング</span>
     <span class="mk-item"><kbd>Space</kbd><kbd>Esc</kbd> 閉じる</span>
   </div>
 </div>
@@ -1120,11 +1125,11 @@ const GROUP_THRESHOLD_DEFAULT = {group_threshold};
 
 /* ---- State ---- */
 let S = {{
-  ratings:  {{}},   // stem -> 1|2|3 (クライアント設定)
+  ratings:  {{}},   // stem -> 1|2|3|4|5 (クライアント設定)
   adopted:  {{}},   // stem -> bool
   tags:     {{}},   // stem -> string[]
   notes:    {{}},   // stem -> string
-  ui: {{ filter_op: 'all', sort: 'dt_asc', thumb_size: 260, search: '', kw_filter: null, last_exported_at: '', view_mode: 'list', group_threshold: GROUP_THRESHOLD_DEFAULT }}
+  ui: {{ filter_cmp: 'gte', filter_level: 0, sort: 'dt_asc', thumb_size: 260, search: '', kw_filter: null, last_exported_at: '', view_mode: 'list', group_threshold: GROUP_THRESHOLD_DEFAULT }}
 }};
 
 function save() {{ try {{ localStorage.setItem(STORE, JSON.stringify(S)); }} catch(e) {{}} }}
@@ -1135,7 +1140,19 @@ function mergeState(src) {{
   if (isPlainObject(src.adopted)) S.adopted = src.adopted;
   if (isPlainObject(src.tags)) S.tags = src.tags;
   if (isPlainObject(src.notes)) S.notes = src.notes;
-  if (isPlainObject(src.ui)) Object.assign(S.ui, src.ui);
+  if (isPlainObject(src.ui)) {{
+    Object.assign(S.ui, src.ui);
+    // 旧 filter_op → 新 filter_cmp / filter_level へ移行
+    if (S.ui.filter_op !== undefined) {{
+      const op = S.ui.filter_op;
+      if      (op === 'eq1')    {{ S.ui.filter_cmp = 'eq';  S.ui.filter_level = 1; }}
+      else if (op === 'eq2')    {{ S.ui.filter_cmp = 'eq';  S.ui.filter_level = 2; }}
+      else if (op === 'eq3')    {{ S.ui.filter_cmp = 'eq';  S.ui.filter_level = 3; }}
+      else if (op === 'gte2')   {{ S.ui.filter_cmp = 'gte'; S.ui.filter_level = 2; }}
+      else                      {{ S.ui.filter_level = 0; }}
+      delete S.ui.filter_op;
+    }}
+  }}
   return true;
 }}
 function load() {{
@@ -1173,16 +1190,18 @@ function effRating(stem) {{
 
 /* ---- Filter / Sort ---- */
 function filterAndSort() {{
-  const op = S.ui.view_mode === 'adopted' ? 'adopted' : S.ui.filter_op;
+  const lvl = S.ui.filter_level || 0;
+  const cmp = S.ui.filter_cmp   || 'gte';
   const q = S.ui.search.toLowerCase().trim();
   const kw = S.ui.kw_filter;
   return PHOTOS.filter(p => {{
     const r = effRating(p.stem);
-    if (op === 'eq1' && r !== 1) return false;
-    if (op === 'eq2' && r !== 2) return false;
-    if (op === 'eq3' && r !== 3) return false;
-    if (op === 'gte2' && r < 2)  return false;
-    if (op === 'adopted' && !S.adopted[p.stem]) return false;
+    if (lvl > 0) {{
+      if (cmp === 'gte' && r <  lvl) return false;
+      if (cmp === 'lte' && r >  lvl) return false;
+      if (cmp === 'eq'  && r !== lvl) return false;
+    }}
+    if (S.ui.view_mode === 'adopted' && !S.adopted[p.stem]) return false;
     if (kw && !p.keywords.includes(kw)) return false;
     if (q) {{
       const inStem = p.stem.toLowerCase().includes(q);
@@ -1215,7 +1234,7 @@ function renderCard(p) {{
   const note = esc(S.notes[p.stem] || '');
   const camH = p.rating > 0 ? '★'.repeat(p.rating) : '—';
   let pickH = '';
-  for (let i = 1; i <= 3; i++) {{
+  for (let i = 1; i <= 5; i++) {{
     pickH += `<button class="star-pick-btn ${{ur >= i ? 'on' : ''}}" onclick="setRating(this.closest('.card').dataset.stem,${{i}})" title="${{i}}★">★</button>`;
   }}
   if (ur > 0) pickH += `<button class="star-reset-btn" onclick="setRating(this.closest('.card').dataset.stem,0)">✕</button>`;
@@ -1503,7 +1522,19 @@ window.toggleAdoptModal = function() {{
 
 /* ---- UI controls ---- */
 window.onSearch = function(v) {{ S.ui.search = v; save(); renderGrid(); }};
-window.onFilterChange = function() {{ S.ui.filter_op = document.getElementById('filter-op').value; save(); renderGrid(); }};
+window.onFilterCmpChange = function() {{ S.ui.filter_cmp = document.getElementById('filter-cmp').value; save(); renderGrid(); }};
+window.setFilterLevel = function(n) {{
+  S.ui.filter_level = (S.ui.filter_level === n) ? 0 : n;
+  save(); renderFilterStars(); renderGrid();
+}};
+function renderFilterStars() {{
+  const lvl = S.ui.filter_level || 0;
+  const el = document.getElementById('filter-stars');
+  if (!el) return;
+  el.innerHTML = [1,2,3,4,5].map(i =>
+    `<button class="filter-star-btn ${{i <= lvl ? 'on' : ''}}" onclick="setFilterLevel(${{i}})" title="${{i}}★">★</button>`
+  ).join('');
+}}
 window.onSortChange = function() {{ S.ui.sort = document.getElementById('sort-select').value; save(); renderGrid(); }};
 window.onSizeChange = function(v) {{
   S.ui.thumb_size = parseInt(v, 10);
@@ -1613,7 +1644,7 @@ document.addEventListener('keydown', e => {{
       return;
     }}
     if (e.key === 'a' || e.key === 'A') {{ e.preventDefault(); window.toggleAdoptModal(); return; }}
-    if (e.key === '1' || e.key === '2' || e.key === '3') {{
+    if (['1','2','3','4','5'].includes(e.key)) {{
       e.preventDefault();
       const v = parseInt(e.key, 10);
       window.setRating(_modalStem, S.ratings[_modalStem] === v ? 0 : v);
@@ -1638,7 +1669,7 @@ document.addEventListener('keydown', e => {{
       if (p) window.openModal(p.url, p.stem);
       return;
     }}
-    if ((e.key === '1' || e.key === '2' || e.key === '3') && _focusedStem) {{
+    if (['1','2','3','4','5'].includes(e.key) && _focusedStem) {{
       e.preventDefault();
       const v = parseInt(e.key, 10);
       window.setRating(_focusedStem, S.ratings[_focusedStem] === v ? 0 : v);
@@ -1655,7 +1686,8 @@ window.dismissWarning = function() {{
 
 /* ---- Init ---- */
 load();
-document.getElementById('filter-op').value  = S.ui.filter_op  || 'all';
+document.getElementById('filter-cmp').value = S.ui.filter_cmp || 'gte';
+renderFilterStars();
 document.getElementById('sort-select').value = S.ui.sort       || 'dt_asc';
 document.getElementById('size-slider').value = S.ui.thumb_size || 260;
 document.getElementById('search-box').value  = S.ui.search     || '';
